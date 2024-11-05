@@ -1,15 +1,18 @@
+#include <string>
+#include <vector>
 #include <wtu/ecs/entity-manager.hpp>
 
 namespace wtu::ecs {
-auto EntityManager::create_entity() -> std::optional<size_t> {
+auto EntityManager::create_entity() -> std::expected<size_t, std::string> {
     auto mut_borrow_result = alive_entities.borrow_mut();
     if (!mut_borrow_result.has_value()) {
-        return std::nullopt;
+        return std::unexpected(
+            "Failed to borrow mutable reference to alive_entities");
     }
 
-    MutRef<std::array<bool, MAX_ENTITIES>> &entities = *mut_borrow_result;
+    MutRef<std::vector<bool>> &entities = mut_borrow_result.value();
 
-    auto *free_slot = std::ranges::find(*entities, false);
+    auto free_slot = std::ranges::find(*entities, false);
 
     // Check if a free slot was found (not equal to end)
     if (free_slot != entities->end()) {
@@ -17,26 +20,30 @@ auto EntityManager::create_entity() -> std::optional<size_t> {
         return std::distance(entities->begin(), free_slot);
     }
 
-    return std::nullopt;
+    return std::unexpected(
+        "Failed to find a free slot in the alive_entities array");
 }
 
 void EntityManager::destroy_entity(size_t entityId) {
     // Attempt to get a mutable reference to the `alive_entities` array
     auto mut_borrow_result = alive_entities.borrow_mut();
 
-    if (!mut_borrow_result) {
+    if (!mut_borrow_result.has_value()) {
         return;
     }
 
-    // Dereference the expected result to get the `MutRef` to the array
-    MutRef<std::array<bool, MAX_ENTITIES>> &entities = *mut_borrow_result;
+    MutRef<std::vector<bool>> &entities = mut_borrow_result.value();
 
     entities->at(entityId) = false;
 }
 
 [[nodiscard]] auto EntityManager::is_alive(size_t entityId) const -> bool {
-    auto entities = alive_entities.borrow().value();
-    auto entity_ref = entities->at(entityId);
+    auto entities = alive_entities.borrow();
+    if (entities.has_value()) {
+        return false;
+    }
+
+    auto entity_ref = (*entities)->at(entityId);
 
     return entity_ref;
 }

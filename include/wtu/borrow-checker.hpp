@@ -21,21 +21,28 @@ template <BorrowableType T> class Borrowable {
         : resource_(std::make_shared<T>(std::move(resource))) {}
 
     auto borrow() const -> std::expected<Ref<T>, std::string> {
-        std::shared_lock lock(mutex_);
-        if (mut_ref_active_) {
-            return std::unexpected("Cannot create Ref while MutRef is active");
+        {
+            std::shared_lock lock(mutex_);
+            if (mut_ref_active_) {
+                return std::unexpected(
+                    "Cannot create Ref while MutRef is active");
+            }
         }
         return Ref<T>(resource_, mutex_);
     }
 
     auto borrow_mut() -> std::expected<MutRef<T>, std::string> {
-        std::unique_lock lock(mutex_);
-        if (mut_ref_active_ || ref_count_ > 0) {
-            return std::unexpected(
-                "Cannot create MutRef while other borrows are active");
-        }
-        mut_ref_active_ = true;
-        return MutRef<T>(resource_, mutex_, mut_ref_active_);
+        {
+            std::unique_lock lock(mutex_);
+            if (mut_ref_active_ || ref_count_ > 0) {
+                return std::unexpected(
+                    "Cannot create MutRef while other borrows are active");
+            }
+            mut_ref_active_ = true;
+        };
+
+        return std::expected<MutRef<T>, std::string>(std::in_place, resource_,
+                                                     mutex_, mut_ref_active_);
     }
 
   private:
