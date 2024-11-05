@@ -1,3 +1,4 @@
+#include <iostream>
 #include <string>
 #include <vector>
 #include <wtu/ecs/entity-manager.hpp>
@@ -40,6 +41,8 @@ void EntityManager::destroy_entity(size_t entityId) {
 [[nodiscard]] auto EntityManager::is_alive(size_t entityId) const -> bool {
     auto entities = alive_entities.borrow();
     if (entities.has_value()) {
+        std::cerr << "Failed to borrow reference to alive_entities"
+                  << std::endl;
         return false;
     }
 

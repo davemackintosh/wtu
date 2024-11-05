@@ -8,7 +8,11 @@ TEST_CASE("Entity manager works as expected", "[entity-manager]") {
             std::expected<size_t, std::string>(0));
     REQUIRE(entity_manager.create_entity() ==
             std::expected<size_t, std::string>(1));
+
     entity_manager.destroy_entity(1);
+    REQUIRE_FALSE(entity_manager.is_alive(1));
+
     REQUIRE(entity_manager.create_entity() ==
             std::expected<size_t, std::string>(1));
+    REQUIRE(entity_manager.is_alive(1));
 }
