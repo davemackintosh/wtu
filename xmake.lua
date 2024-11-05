@@ -12,13 +12,17 @@ set_languages("c++23")
 add_includedirs("include")
 set_warnings("all", "error")
 
--- Safety.
--- set_policy("check.auto_ignore_flags", false)
--- set_policy("build.sanitizer.address", true)
+local sdl_features = {
+	"vulkan"
+}
+if is_plat("linux") then
+	table.insert(sdl_features, "wayland")
+	table.insert(sdl_features, "alsa")
+end
 
 -- Dependencies.
 add_requires(
-	"vcpkg::sdl2[vulkan,wayland,alsa]",
+	"vcpkg::sdl2", { configs = { features = sdl_features } },
 	"vcpkg::vulkan-memory-allocator-hpp"
 )
 
